@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/expire-reservations",
+      "schedule": "* * * * *"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "DIRECT_URL": "@direct_url",
+    "CRON_SECRET": "@cron_secret"
+  }
+}
