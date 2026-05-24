@@ -1,0 +1,80 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Product {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  sku         String       @unique
+  price       Decimal      @db.Decimal(10, 2)
+  imageUrl    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  inventories Inventory[]
+  reservations Reservation[]
+
+  @@map("products")
+}
+
+model Warehouse {
+  id          String      @id @default(cuid())
+  name        String
+  location    String
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  inventories Inventory[]
+
+  @@map("warehouses")
+}
+
+model Inventory {
+  id             String        @id @default(cuid())
+  productId      String
+  warehouseId    String
+  totalUnits     Int           @default(0)
+  reservedUnits  Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  product        Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouse      Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+
+  @@unique([productId, warehouseId])
+  @@map("inventories")
+}
+
+model Reservation {
+  id             String            @id @default(cuid())
+  productId      String
+  inventoryId    String
+  quantity       Int
+  status         ReservationStatus @default(PENDING)
+  expiresAt      DateTime
+  confirmedAt    DateTime?
+  releasedAt     DateTime?
+  customerEmail  String?
+  idempotencyKey String?           @unique
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  product        Product           @relation(fields: [productId], references: [id])
+  inventory      Inventory         @relation(fields: [inventoryId], references: [id])
+
+  @@index([status, expiresAt])
+  @@index([idempotencyKey])
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  RELEASED
+  EXPIRED
+}
